@@ -326,3 +326,23 @@ class SVM:
 
         gstate = GlobalState(child_wstate, environment)
         return self.executor.execute_gstate(gstate)
+    
+
+    def get_all_nodes(self):
+        nodes = []
+
+        def traverse_wstate(wstate):
+            for trace, children in wstate.trace_to_children.items():
+                for child in children:
+                    gstate = GlobalState(child, None)  # No need for environment during fuzzing
+                    nodes.append(gstate)
+                    traverse_wstate(child)
+
+        for addr in self.fuzz_addresses:
+            roots = self.sym_call_address(addr, self.root_wstate)
+            for root in roots:
+                nodes.append(root)
+                traverse_wstate(root.wstate)
+
+        return nodes
+

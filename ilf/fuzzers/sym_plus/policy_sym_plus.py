@@ -54,7 +54,71 @@ class PolicySymPlus(PolicyBase):
         self.all_gstates.extend(gstates)
         self.idd_to_gstates[obs.active_idd] = gstates
         logging.info(f'found {len(gstates)} states')
+
+        # --------------------------------------------VerifSmart--------------
+        for gstate in gstates:
+            fuzz_tx = self.fuzz_node(gstate, obs, svm)
+            if fuzz_tx:
+                return fuzz_tx 
+        # --------------------------------------------VerifSmart--------------
+
         return self.get_best_tx(obs, svm, gstates)
+
+
+# --------------------------------------------VerifSmart--------------
+    def fuzz_node(self, gstate, obs, svm):
+        """
+    Generates and executes a transaction at each node of the symbolic tree.
+    """
+        solver = self.get_state_solver(gstate)
+        if solver is None:
+            return None  # Skip infeasible paths
+
+        model = solver.model()
+        sender_value = model.eval(gstate.environment.sender).as_long()
+        sender = svm.possible_caller_addresses.index(sender_value)
+        amount = model.eval(gstate.environment.callvalue).as_long()
+        method_name = gstate.wstate.trace.split('.')[1].split('(')[0]
+        address = hex(gstate.environment.active_address)
+
+        if address not in obs.contract_manager.address_to_contract:
+            return None  # Invalid contract address
+
+        contract = obs.contract_manager.address_to_contract[address]
+        timestamp = self._select_timestamp(obs)
+
+        if method_name == 'fallback':
+            if Method.FALLBACK not in contract.abi.methods_by_name:
+                return None
+            method_name = Method.FALLBACK
+            logging.info(f'Fuzzing node - executing fallback at {hex(sender_value)}')
+            return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True)
+
+        method = contract.abi.methods_by_name[method_name]
+        inputs = method.inputs
+        arguments = []
+
+    # Generate random arguments if necessary
+        random_args = self.policy_random._select_arguments(contract, method, sender, obs)
+
+        for i, arg in enumerate(inputs):
+            t = arg.evm_type.t
+            calldata = svm.sym_bv_generator.get_sym_bitvec(
+                constraints.ConstraintType.CALLDATA, gstate.wstate.gen, index=4 + i * 32)
+            calldata_eval = model.eval(calldata)
+
+            if svm_utils.is_bv_concrete(calldata_eval):
+                arg_eval = calldata_eval.as_long()
+            else:
+                arg_eval = random_args[i]
+
+            arguments.append(arg_eval)
+
+        logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
+
+        return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True)
+# --------------------------------------------VerifSmart--------------
+
 
 
     def get_best_tx(self, obs, svm, gstates):

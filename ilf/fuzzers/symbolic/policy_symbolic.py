@@ -29,12 +29,25 @@ class PolicySymbolic(PolicyBase):
     def select_tx(self, obs):
         self.tx_count += 1
         svm = obs.svm
-        gstates = []
-        for address in svm.fuzz_addresses:
-            gstates.extend(svm.sym_call_address(address, svm.root_wstate))
-        logging.info(f'found {len(gstates)} states')
-        return self.get_best_tx(obs, svm, gstates)
+        #org--------------------------------------------
+        # gstates = []
+        # for address in svm.fuzz_addresses:
+        #     gstates.extend(svm.sym_call_address(address, svm.root_wstate))
+        #     # --------------------------------------------------------VerifSmart
+        #     gstates.extend(svm.get_all_nodes())    #need to implement get_all_nodes() in your svm
+        #     # --------------------------------------------------------VerifSmart
 
+        # logging.info(f'found {len(gstates)} states')
+        # return self.get_best_tx(obs, svm, gstates)
+        #org--------------------------------------------
+
+        # --------------------------------------------------------VerifSmart
+        gstates = svm.get_all_nodes()  # << change here
+        logging.info(f'[NodeFuzz] Collected {len(gstates)} symbolic tree nodes')
+        return self.get_best_tx(obs, svm, gstates)
+         # --------------------------------------------------------VerifSmart
+
+# note: org collects symbolic states only from the root state, which is shallow and not node-by-node exploration. BUT we need all exploration. Fuzing at ecah node
     def get_best_tx(self, obs, svm, gstates):
         gain_to_gstates = defaultdict(list)
         for gstate in gstates:
