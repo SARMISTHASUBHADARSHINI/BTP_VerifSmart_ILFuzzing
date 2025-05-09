@@ -1,4 +1,4 @@
-Modified version of the Interpreted Language Fuzzer (ILF) tailored for symbolic-assisted fuzzing of Solidity smart contracts. It combines symbolic execution and fuzzing to explore smart contract behaviors more deeply and efficiently.
+Modified version of the Imitation Learning based Fuzzer (ILF) tailored for symbolic-assisted fuzzing of Solidity smart contracts. It combines symbolic execution and fuzzing to explore smart contract behaviors more deeply and efficiently.
 Fuzzes at every Node of the symbolic tree.
 All changes—like symbolic enhancements, new fuzzing policies, and execution logic
 Structure:
