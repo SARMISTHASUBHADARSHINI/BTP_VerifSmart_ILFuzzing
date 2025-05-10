@@ -1,4 +1,5 @@
-FROM ubuntu:18.04
+#FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:18.04
 
 RUN apt-get -y update
 RUN apt-get -y install \
@@ -8,6 +9,20 @@ RUN apt-get -y install \
     libssl-dev \
     curl \
     git
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    libgmp-dev \
+    git \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN apt-get update && apt-get install -y libffi-dev
+
 
 # install nodejs truffle web3 ganache-cli
 RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
@@ -56,11 +71,14 @@ RUN git apply /go/src/ilf/script/patch.geth
 
 WORKDIR /go/src/ilf
 # install python dependencies
+RUN pip3 install --upgrade pip setuptools wheel
 RUN apt-get -y install autoconf libjpeg-dev zlib1g-dev
 RUN pip3 install "cython<3.0.0" --no-cache-dir
 RUN pip3 install cytoolz --no-cache-dir
 RUN pip3 install -r requirements.txt --no-cache-dir
-RUN pip3 install torch==1.10.2+cpu torchvision==0.11.3+cpu torchaudio==0.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+#RUN pip3 install torch==1.10.2+cpu torchvision==0.11.3+cpu torchaudio==0.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+RUN pip3 install torch==1.10.2 torchvision==0.11.3 torchaudio==0.10.2 -f https://download.pytorch.org/whl/cpu/torch_stable.html
+
 RUN go build -o execution.so -buildmode=c-shared export/execution.go
 
 # install pyethereum
