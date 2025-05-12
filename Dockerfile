@@ -1,5 +1,9 @@
 #FROM ubuntu:18.04
-FROM --platform=linux/amd64 ubuntu:18.04
+#FROM --platform=linux/amd64 ubuntu:18.04
+
+FROM --platform=linux/amd64 ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get -y update
 RUN apt-get -y install \
@@ -22,7 +26,6 @@ RUN apt-get update && apt-get install -y \
 
 
 RUN apt-get update && apt-get install -y libffi-dev
-
 
 # install nodejs truffle web3 ganache-cli
 RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
