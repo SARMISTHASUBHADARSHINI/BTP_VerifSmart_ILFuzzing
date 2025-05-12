@@ -53,14 +53,24 @@ def modify_truffle_js():
         f.write(s)
 
 
+# def run_ganache():
+#     account_cmd = []
+#     for account in accounts:
+#         account_cmd.append('--account=0x{},{}'.format(account, amount))
+
+#     cmd = ['ganache-cli', '-p', str(args.port), '--gasLimit', '0xfffffffffff'] + account_cmd
+#     pid = subprocess.Popen(cmd).pid
+#     return pid
+
 def run_ganache():
     account_cmd = []
     for account in accounts:
         account_cmd.append('--account=0x{},{}'.format(account, amount))
 
     cmd = ['ganache-cli', '-p', str(args.port), '--gasLimit', '0xfffffffffff'] + account_cmd
-    pid = subprocess.Popen(cmd).pid
-    return pid
+    proc = subprocess.Popen(cmd)
+    return proc
+
 
 
 def extract_transactions():
@@ -74,10 +84,18 @@ def extract_transactions():
     subprocess.call('truffle exec {}'.format(extract_js_path), shell=True)
 
 
+# def main():
+#     pid = run_ganache()
+#     extract_transactions()
+#     os.kill(pid, signal.SIGTERM)
+
 def main():
-    pid = run_ganache()
-    extract_transactions()
-    os.kill(pid, signal.SIGTERM)
+    proc = run_ganache()
+    try:
+        extract_transactions()
+    finally:
+        proc.terminate()
+
 
 
 if __name__ == '__main__':
