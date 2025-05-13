@@ -1,0 +1,12 @@
+pycryptodome>=3.4.7
+pysha3>=1.0.1
+graphviz
+numpy
+tqdm
+scikit-learn==0.22.1
+persistent
+rlp==1.0.1
+coincurve==12.0.0
+web3==5.3.0
+typing-extensions
+py_ecc==1.7.1
