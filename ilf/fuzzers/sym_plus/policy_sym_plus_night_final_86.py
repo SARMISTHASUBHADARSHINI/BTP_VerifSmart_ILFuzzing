@@ -76,17 +76,100 @@ class PolicySymPlus(PolicyBase):
             key=lambda g: (-self.evaluate_pc_set_gain(obs.sym_stat, set(g.pc_trace)), -len(g.pc_trace))
         )
 
+        # Sort only by depth to prioritize deeper unexplored paths
+        # sorted_gstates = sorted(
+        #     unique_gstates,
+        #     key=lambda g: -len(g.pc_trace)
+        # )
+
         for gstate in sorted_gstates:
-            tx = self.fuzz_node(gstate, obs, svm)
+            tx, iid = self.fuzz_node(gstate, obs, svm)
             if tx:
-                return tx, obs.active_idd
+                return tx, iid
 
         return None, None
+
+    # def fuzz_node(self, gstate, obs, svm):
+    #     """
+    #     Generates and executes a transaction at a symbolic node, while updating coverage.
+    #     """
+    #     # Estimate potential coverage gain
+    #     pc_set = set(gstate.pc_trace)
+    #     gain = self.evaluate_pc_set_gain(obs.sym_stat, pc_set)
+    #     logging.debug(f'[PolicySymPlus] Node trace length={len(gstate.pc_trace)}, potential gain={gain}')
+    #     if len(self.last_picked_pc_traces) and self.last_picked_pc_traces[-1] == gstate.pc_trace:
+    #         return None, None
+    #     solver = self.get_state_solver(gstate)
+    #     if solver is None:
+    #         return None, None
+    #     model = solver.model()
+    #     sender_value = model.eval(gstate.environment.sender).as_long()
+    #     sender = svm.possible_caller_addresses.index(sender_value)
+    #     amount = model.eval(gstate.environment.callvalue).as_long()
+    #     method_name = gstate.wstate.trace.split('.')[1].split('(')[0]
+    #     address = hex(gstate.environment.active_address)
+    #     if address not in obs.contract_manager.address_to_contract:
+    #         raise Exception('unknown address')
+    #     contract = obs.contract_manager.address_to_contract[address]
+    #     timestamp = self._select_timestamp(obs)
+    #     if method_name == 'fallback':
+    #         if Method.FALLBACK not in contract.abi.methods_by_name:
+    #             return None, None
+    #         method_name = Method.FALLBACK
+    #         self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
+    #         logging.info(f'sending tx {method_name} {hex(sender_value)} {gain}')
+    #         return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True), gstate.wstate_idd
+    #     method = contract.abi.methods_by_name[method_name]
+    #     timestamp = model.eval(gstate.environment.timestamp).as_long()
+    #     inputs = method.inputs
+    #     arguments = []
+    #     random_args = self.policy_random._select_arguments(contract, method, sender, obs)
+    #     logging.info(f'sending tx {method.name} {hex(sender_value)} {gain}')
+    #     for i, arg in enumerate(inputs):
+    #         using_random = False
+    #         t = arg.evm_type.t
+    #         arg_eval = None
+    #         calldata = svm.sym_bv_generator.get_sym_bitvec(constraints.ConstraintType.CALLDATA,
+    #                                                     gstate.wstate.gen,
+    #                                                     index=4+i*32)
+    #         calldata_eval = model.eval(calldata)
+    #         if svm_utils.is_bv_concrete(calldata_eval):
+    #             arg_eval = calldata_eval.as_long()
+    #         else:
+    #             logging.debug(f'Using random variable for {method.name} {arg.name}')
+    #             using_random = True
+    #             arg_eval = random_args[i]
+    #         if not using_random:
+    #             if t == SolType.AddressTy:
+    #                 caller_constraint = z3.Or([calldata == p for p in svm.possible_caller_addresses if p != sender_value])
+    #                 solver.add(caller_constraint)
+    #                 if solver.check() == z3.sat:
+    #                     calldata_eval = solver.model().eval(calldata)
+    #                     arg_eval = calldata_eval.as_long()
+    #                 arg_eval = hex(arg_eval % (2**160))
+    #             elif t == SolType.FixedBytesTy:
+    #                 arg_eval = arg_eval % (8 * arg.evm_type.size)
+    #                 arg_bytes = arg_eval.to_bytes(arg.evm_type.size, 'big')
+    #                 arg_eval = [int(b) for b in arg_bytes]
+    #             elif t == SolType.ArrayTy:
+    #                 arg_eval = random_args[i]
+    #             elif t == SolType.BoolTy:
+    #                 arg_eval = False if arg_eval == 0 else True
+    #             elif t == SolType.StringTy:
+    #                 size = random.randint(int(math.log(arg_eval) / math.log(8)) + 1, 40)
+    #                 arg_eval = arg_eval.to_bytes(size, 'big')
+    #                 arg_eval = bytearray([c % 128 for c in arg_eval]).decode('ascii')
+    #         if not isinstance(arg_eval, type(random_args[i])):
+    #             arg_eval = random_args[i]
+    #         arguments.append(arg_eval)
+    #     self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
+    #     tx = Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True)
+    #     return tx, gstate.wstate_idd
 
     def fuzz_node(self, gstate, obs, svm):
         solver = self.get_state_solver(gstate)
         if solver is None:
-            return None
+            return None, None
 
         model = solver.model()
         sender_value = model.eval(gstate.environment.sender).as_long()
@@ -96,16 +179,17 @@ class PolicySymPlus(PolicyBase):
         address = hex(gstate.environment.active_address)
 
         if address not in obs.contract_manager.address_to_contract:
-            return None
+            return None, None
 
         contract = obs.contract_manager.address_to_contract[address]
         timestamp = self._select_timestamp(obs)
 
         if method_name == 'fallback':
             if Method.FALLBACK not in contract.abi.methods_by_name:
-                return None
+                return None, None
             method_name = Method.FALLBACK
             logging.info(f'Fuzzing node - executing fallback at {hex(sender_value)}')
+            self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
             return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True)
 
         method = contract.abi.methods_by_name[method_name]
@@ -123,8 +207,8 @@ class PolicySymPlus(PolicyBase):
             arguments.append(arg_eval)
 
         logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
-
-        return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True)
+        self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
+        return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True), gstate.wstate_idd
 
     def get_best_tx(self, obs, svm, gstates):
         gain_to_gstates = defaultdict(list)
@@ -188,13 +272,9 @@ class PolicySymPlus(PolicyBase):
         covered_pcs_dict = deepcopy(stat.covered_pcs_dict)
         for contract_name, pc in pc_set:
             covered_pcs_dict[contract_name].add(pc)
-        total_coverage = 0
-        stat_total_coverage = 0
-        for contract_name, coverages in covered_pcs_dict.items():
-            total_coverage += len(coverages)
-        for contract_name, coverages in stat.covered_pcs_dict.items():
-            stat_total_coverage += len(coverages)
-        return total_coverage - stat_total_coverage
+        total_coverage = sum(len(c) for c in covered_pcs_dict.values())
+        stat_total = sum(len(c) for c in stat.covered_pcs_dict.values())
+        return total_coverage - stat_total
 
     @staticmethod
     def get_state_solver(gstate):
@@ -206,5 +286,26 @@ class PolicySymPlus(PolicyBase):
         res = solver.check()
         if res == z3.unknown:
             logging.info(f'{gstate.wstate.trace} gstate check timeout')
+        gstate.wstate.status = WorldStateStatus.FEASIBLE if res == z3.sat else WorldStateStatus.INFEASIBLE
+        return solver if res == z3.sat else None
+
+    @staticmethod
+    def get_state_solver(gstate):
+        if not hasattr(gstate, 'wstate') or not hasattr(gstate.wstate, 'constraints'):
+            logging.warning(f'[get_state_solver] Invalid GlobalState without constraints: {gstate}')
+            return None
+
+        status = getattr(gstate.wstate, 'status', None)
+        if status == WorldStateStatus.INFEASIBLE:
+            return None
+
+        solver = z3.Solver()
+        solver.set('timeout', 3 * 60 * 1000)
+        solver.add(gstate.wstate.constraints)
+        res = solver.check()
+
+        if res == z3.unknown:
+            logging.info(f'{getattr(gstate.wstate, "trace", "unknown_trace")} gstate check timeout')
+
         gstate.wstate.status = WorldStateStatus.FEASIBLE if res == z3.sat else WorldStateStatus.INFEASIBLE
         return solver if res == z3.sat else None

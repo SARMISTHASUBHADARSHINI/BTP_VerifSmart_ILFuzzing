@@ -14,12 +14,15 @@ from .fuzzers.mix import PolicyMix, ObsMix
 from .execution import Execution
 from .common import set_logging
 
+runs = 0
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--execution', dest='execution', type=str, default='./execution.so')
     parser.add_argument('--proj', dest='proj', type=str, default=None)
     parser.add_argument('--contract', dest='contract', type=str, default=None)
+    parser.add_argument('--runs', dest='runs', type=int, default=5)
+
     parser.add_argument('--limit', dest='limit', type=int, default=100)
     parser.add_argument('--fuzzer', dest='fuzzer', choices=['random', 'imitation', 'symbolic', 'sym_plus', 'mix'], default='random')
 
@@ -34,6 +37,7 @@ def get_args():
     parser.add_argument('--dataset_dump_path', dest='dataset_dump_path', type=str, default=None)
 
     args = parser.parse_args()
+    print(args)
     return args
 
 
@@ -48,6 +52,8 @@ def init(args):
 def main():
     args = get_args()
     init(args)
+    # global runs
+    # runs = args.runs
 
     LOG = logging.getLogger(__name__)
     LOG.info('fuzzing start')
@@ -79,14 +85,32 @@ def main():
         obs = ObsSymbolic(contract_manager, account_manager, args.dataset_dump_path, backend_loggers)
     elif args.fuzzer == 'sym_plus':
         policy = PolicySymPlus(execution, contract_manager, account_manager)
+        print("sym_plus hi")
+        print(" ")
         obs = ObsSymPlus(contract_manager, account_manager, args.dataset_dump_path, backend_loggers)
+        print("sym_plus end")
+        print(" ")
     elif args.fuzzer == 'mix':
         policy = PolicyMix(execution, contract_manager, account_manager, args)
         obs = ObsMix(contract_manager, account_manager, args.dataset_dump_path, backend_loggers)
 
+    inst_cov = 0;
     environment = Environment(args.limit, args.seed)
-    environment.fuzz_loop(policy, obs)
+    print("hi")
+    print(" ")
+    inst_cov = max(inst_cov,environment.fuzz_loop(policy, obs))
+    print("end")
+    print(" ")
+    return inst_cov
+    
+
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    cov = 0
+    runs = 5
+    for i in range(0,runs):
+        cov = max(main(),cov)
+        print(i)
+    print ("FINAL_INST_cov after 5 runs: ", cov)

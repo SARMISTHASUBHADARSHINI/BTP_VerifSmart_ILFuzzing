@@ -33,22 +33,29 @@ class Environment:
         random.seed(self.seed)
         torch.manual_seed(self.seed)
         numpy.random.seed(self.seed)
-
+        final_cov = 0 #---
         for i in range(1, self.limit+1):
+            print("start - ", i)
+            print(" ")
             if policy.__class__ in (PolicyRandom, PolicyImitation) and i > self.limit // 2:
                 for contract_name in policy.contract_manager.fuzz_contract_names:
                     contract = policy.contract_manager[contract_name]
                     policy.execution.set_balance(contract.addresses[0], 10 ** 29)
 
             tx = policy.select_tx(obs)
+            print("tx is ", tx)
+            print("tx - ", tx == None)
+
             if tx is None:
-                break
+                print("tx is none")
+                break    #//break in orginal
 
             logger = policy.execution.commit_tx(tx)
             old_insn_coverage = obs.stat.get_insn_coverage(tx.contract)
             obs.update(logger, False)
             new_insn_coverage = obs.stat.get_insn_coverage(tx.contract)
-
+            print(new_insn_coverage)
+            print(" ")
             if policy.__class__ in (PolicySymbolic, PolicySymPlus) and new_insn_coverage - old_insn_coverage < 1e-5:
                 break
 
@@ -62,6 +69,8 @@ class Environment:
                     policy.policy_fuzz.clear_history()
                 if obs.__class__ == ObsMix:
                     obs.reset()
+            final_cov = new_insn_coverage #---
+        return final_cov#----
 
 
     def init_txs(self, policy, obs):
