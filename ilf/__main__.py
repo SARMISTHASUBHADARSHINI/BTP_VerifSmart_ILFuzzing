@@ -14,14 +14,19 @@ from .fuzzers.mix import PolicyMix, ObsMix
 from .execution import Execution
 from .common import set_logging
 
-runs = 0
+global runs
+global bugs
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--execution', dest='execution', type=str, default='./execution.so')
     parser.add_argument('--proj', dest='proj', type=str, default=None)
     parser.add_argument('--contract', dest='contract', type=str, default=None)
-    parser.add_argument('--runs', dest='runs', type=int, default=5)
+    #added---- VerifSmart---------------------------------------------------
+    parser.add_argument('--runs', dest='runs', type=int, default=1)
+    parser.add_argument('--depth', dest='depth', type=int, default=-1)
+    #added---- VerifSmart---------------------------------------------------
+
 
     parser.add_argument('--limit', dest='limit', type=int, default=100)
     parser.add_argument('--fuzzer', dest='fuzzer', choices=['random', 'imitation', 'symbolic', 'sym_plus', 'mix'], default='random')
@@ -49,11 +54,10 @@ def init(args):
     sys.setrecursionlimit(8000)
 
 
-def main():
-    args = get_args()
+def main(args):
+    
     init(args)
-    # global runs
-    # runs = args.runs
+    
 
     LOG = logging.getLogger(__name__)
     LOG.info('fuzzing start')
@@ -84,7 +88,8 @@ def main():
         policy = PolicySymbolic(execution, contract_manager, account_manager)
         obs = ObsSymbolic(contract_manager, account_manager, args.dataset_dump_path, backend_loggers)
     elif args.fuzzer == 'sym_plus':
-        policy = PolicySymPlus(execution, contract_manager, account_manager)
+        K = args.depth
+        policy = PolicySymPlus(execution, contract_manager, account_manager, K) #added k depth
         print("sym_plus hi")
         print(" ")
         obs = ObsSymPlus(contract_manager, account_manager, args.dataset_dump_path, backend_loggers)
@@ -98,19 +103,51 @@ def main():
     environment = Environment(args.limit, args.seed)
     print("hi")
     print(" ")
-    inst_cov = max(inst_cov,environment.fuzz_loop(policy, obs))
+    inst_cov_cur, bug_found = environment.fuzz_loop(policy, obs)
+    inst_cov = max(inst_cov,inst_cov_cur)
     print("end")
     print(" ")
-    return inst_cov
+    return inst_cov, bug_found
     
 
 
 
 if __name__ == '__main__':
-    # main()
+    # ---------------- VerifSmart ----------------
+    args = get_args()
+    runs = args.runs
+    K = args.depth
+    FINALbugs = {}
+
+    if K != -1 and K <= 0:
+        print("Please enter a valid depth [Default: -1 (no depth consideration)]")
+        exit(1)  # Use exit instead of return at the top level
+
     cov = 0
-    runs = 5
-    for i in range(0,runs):
-        cov = max(main(),cov)
-        print(i)
-    print ("FINAL_INST_cov after 5 runs: ", cov)
+    print("Number of runs:", runs)
+    c1 = 0
+    c2 = 0
+    
+    for i in range(runs):
+        cur_cov, bugs = main(args)
+        if cur_cov == 0.8342857142857143:
+            c1 = c1 + 1
+        else:
+            c2 = c2 +1
+
+        print("Completed run:", i + 1)
+        print("Bugs found", bugs)
+        for bug_type, methods in bugs.items():
+            if bug_type not in FINALbugs:
+                FINALbugs[bug_type] = set()
+            FINALbugs[bug_type].update(methods)
+
+        print("Current Inst Coverage found", cur_cov)
+        cov = max(cur_cov, cov)
+    print(" ")
+    print("FINAL Bugs Found after {} runs: {}".format(runs, FINALbugs))
+    print("FINAL INST cov after {} runs: {}".format(runs, cov))
+    print("11: ",c1)
+    print(c2)    
+    # ---------------- VerifSmart ----------------
+

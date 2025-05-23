@@ -19,7 +19,7 @@ from copy import copy, deepcopy
 
 class PolicySymPlus(PolicyBase):
 
-    def __init__(self, execution, contract_manager, account_manager):
+    def __init__(self, execution, contract_manager, account_manager, K):
         super().__init__(execution, contract_manager, account_manager)
 
         self.policy_random = policy_random.PolicyRandom(execution, contract_manager, account_manager)
@@ -28,8 +28,15 @@ class PolicySymPlus(PolicyBase):
         self.tx_count = 0
         self.idd_to_gstates = {}
         self.all_gstates = []
+        #added---- VerifSmart---------------------------------------------------
+        self.K = K
+        #added---- VerifSmart---------------------------------------------------
 
     def select_tx(self, obs):
+        # if self.K == -1:
+        #     tx, idd = self.select_new_tx(obs)
+        # else:
+        #     tx, idd = self.select_new_tx_with_depth(obs)
         tx, idd = self.select_new_tx(obs)
         if tx is not None:
             return tx
@@ -43,6 +50,58 @@ class PolicySymPlus(PolicyBase):
         logging.info(f'no gain found globally')
         return None
 
+    def select_new_tx_with_depth(self, obs):
+        self.tx_count += 1
+        svm = obs.svm
+
+        # K = 5  # Max symbolic tree depth
+
+        def collect_gstates_with_depth(g, depth, max_depth):
+            if depth > max_depth:
+                return []
+            result = [(g, depth)]
+            children = svm.executor.execute_gstate(g)
+            # print(children)
+            for child in children:
+                result.extend(collect_gstates_with_depth(child, depth + 1, max_depth))
+            return result
+
+        gstates_with_depth = []
+        for address in svm.fuzz_addresses:
+            root_gstates = svm.sym_call_address(address, svm.root_wstate)
+            for g in root_gstates:
+                gstates_with_depth.extend(collect_gstates_with_depth(g, 1, self.K))
+
+        for g, _ in gstates_with_depth:
+            g.wstate_idd = obs.active_idd
+
+    # Deduplicate based on pc_trace and depth limit
+        unique_traces = set()
+        unique_gstates_with_depth = []
+        for g, depth in gstates_with_depth:
+            trace_key = tuple(g.pc_trace)
+            if trace_key not in unique_traces and depth <= self.K:
+                unique_traces.add(trace_key)
+                # print(depth)
+                unique_gstates_with_depth.append((g, depth))
+
+        logging.info(f'[PolicySymPlus] Collected {len(unique_gstates_with_depth)} unique gstates from symbolic tree up to depth {self.K}')
+
+        self.all_gstates.extend([g for g, _ in unique_gstates_with_depth])
+        self.idd_to_gstates[obs.active_idd] = [g for g, _ in unique_gstates_with_depth]
+
+        sorted_gstates = sorted(
+            unique_gstates_with_depth,
+            key=lambda x: (-self.evaluate_pc_set_gain(obs.sym_stat, set(x[0].pc_trace)), -x[1])
+        )
+
+        for gstate, depth in sorted_gstates:
+            tx, iid = self.fuzz_node(gstate, obs, svm)
+            if tx:
+                return tx, iid
+
+        return None, None
+
     def select_new_tx(self, obs):
         self.tx_count += 1
         svm = obs.svm
@@ -50,9 +109,11 @@ class PolicySymPlus(PolicyBase):
         for address in svm.fuzz_addresses:
             root_gstates = svm.sym_call_address(address, svm.root_wstate)
             for g in root_gstates:
+                # print(g)
                 gstates.append(g)
+                # print(svm.executor.execute_gstate(g))
                 gstates.extend(svm.executor.execute_gstate(g))  # Fuzz every reachable state
-
+        
         for gstate in gstates:
             gstate.wstate_idd = obs.active_idd
 
@@ -82,10 +143,41 @@ class PolicySymPlus(PolicyBase):
         #     key=lambda g: -len(g.pc_trace)
         # )
 
-        for gstate in sorted_gstates:
-            tx, iid = self.fuzz_node(gstate, obs, svm)
-            if tx:
-                return tx, iid
+        if self.K != -1:
+            k = self.K  #bounded
+            tx_old = None
+            iid_old = None
+            for gstate in sorted_gstates:
+                k= k-1
+                tx, iid = self.fuzz_node(gstate, obs, svm)
+                if k >=0:
+                    if tx:
+                        print("K IS THIS", k)
+                        print(gstate)
+                        print(" ")
+                        return tx, iid
+                    else:
+                        print(k)
+                        print("CALLLLLLLLLLLLLLLLL OLD")
+                        print(tx_old == None)
+                        return tx_old, iid_old
+                if tx:
+                    tx_old = tx 
+                    iid_old = iid
+            return tx_old, iid_old
+
+        else:
+            for gstate in sorted_gstates:
+                tx, iid = self.fuzz_node(gstate, obs, svm)
+                if tx:
+                    print(gstate)
+                    return tx, iid
+
+        # for gstate in sorted_gstates:
+        #     tx, iid = self.fuzz_node(gstate, obs, svm)
+        #     if tx:
+        #         print(gstate)
+        #         return tx, iid
 
         return None, None
 
@@ -166,6 +258,7 @@ class PolicySymPlus(PolicyBase):
     #     tx = Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True)
     #     return tx, gstate.wstate_idd
 
+    #added---- VerifSmart---------------------------------------------------
     def fuzz_node(self, gstate, obs, svm):
         solver = self.get_state_solver(gstate)
         if solver is None:
@@ -209,6 +302,7 @@ class PolicySymPlus(PolicyBase):
         logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
         self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
         return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True), gstate.wstate_idd
+    #added---- VerifSmart---------------------------------------------------
 
     def get_best_tx(self, obs, svm, gstates):
         gain_to_gstates = defaultdict(list)

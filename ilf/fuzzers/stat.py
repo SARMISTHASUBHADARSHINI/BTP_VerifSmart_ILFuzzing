@@ -149,3 +149,19 @@ class Stat:
         covered_blocks = len(self.covered_blocks_dict[contract_name])
         coverage_blocks = covered_blocks / all_blocks
         return coverage_blocks
+
+#added---- VerifSmart---------------------------------------------------
+    def get_new_bugs(self, contract_name, bugs):
+        """
+        Updates the given 'bugs' dictionary with any new bugs detected in the specified contract.
+        Returns the updated dictionary.
+        """
+        if contract_name not in self.bug_res:
+            return bugs  # Return the original if no bugs are recorded for this contract
+
+        for bug in sorted(self.bug_res[contract_name]):
+            if bug not in bugs:
+                bugs[bug] = list(sorted(self.bug_res[contract_name][bug]))
+        
+        return bugs
+#added---- VerifSmart---------------------------------------------------

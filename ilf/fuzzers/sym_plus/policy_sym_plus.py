@@ -19,7 +19,7 @@ from copy import copy, deepcopy
 
 class PolicySymPlus(PolicyBase):
 
-    def __init__(self, execution, contract_manager, account_manager):
+    def __init__(self, execution, contract_manager, account_manager, K):
         super().__init__(execution, contract_manager, account_manager)
 
         self.policy_random = policy_random.PolicyRandom(execution, contract_manager, account_manager)
@@ -28,6 +28,9 @@ class PolicySymPlus(PolicyBase):
         self.tx_count = 0
         self.idd_to_gstates = {}
         self.all_gstates = []
+        #added---- VerifSmart---------------------------------------------------
+        self.K = K
+        #added---- VerifSmart---------------------------------------------------
 
     def select_tx(self, obs):
         tx, idd = self.select_new_tx(obs)
@@ -50,9 +53,11 @@ class PolicySymPlus(PolicyBase):
         for address in svm.fuzz_addresses:
             root_gstates = svm.sym_call_address(address, svm.root_wstate)
             for g in root_gstates:
+                # print(g)
                 gstates.append(g)
+                # print(svm.executor.execute_gstate(g))
                 gstates.extend(svm.executor.execute_gstate(g))  # Fuzz every reachable state
-
+        
         for gstate in gstates:
             gstate.wstate_idd = obs.active_idd
 
@@ -81,106 +86,79 @@ class PolicySymPlus(PolicyBase):
         #     unique_gstates,
         #     key=lambda g: -len(g.pc_trace)
         # )
-        '''k = 10   #bounded
-        tx_old = None
-        iid_old = None
-        for gstate in sorted_gstates:
-            k= k-1
-            tx, iid = self.fuzz_node(gstate, obs, svm)
-            if k ==0:
-                if tx:
-                    return tx, iid
-                else:
-                    return tx_old, iid_old
-            if tx:
-                    tx_old = tx 
-                    iid_old = iid
-        '''
 
-        for gstate in sorted_gstates:
-            tx, iid = self.fuzz_node(gstate, obs, svm)
-            if tx:
-                return tx, iid
+        # if self.K != -1:
+        #     k = self.K  #bounded
+        #     tx_old = None
+        #     iid_old = None
+        #     for gstate in sorted_gstates:
+        #         k= k-1
+        #         tx, iid = self.fuzz_node(gstate, obs, svm)
+        #         if k >=0:
+        #             if tx:
+        #                 print("K IS THIS", k)
+        #                 print(gstate)
+        #                 print(" ")
+        #                 return tx, iid
+        #             else:
+        #                 print(k)
+        #                 print("CALLLLLLLLLLLLLLLLL OLD")
+        #                 print(tx_old == None)
+        #                 return tx_old, iid_old
+        #         if tx:
+        #             tx_old = tx 
+        #             iid_old = iid
+        #     return tx_old, iid_old
+        # else:
+        #     for gstate in sorted_gstates:
+        #         tx, iid = self.fuzz_node(gstate, obs, svm)
+        #         if tx:
+        #             print(gstate)
+        #             return tx, iid
+
+        if self.K != -1:
+            k = self.K  # bounded
+            tx_best = None
+            iid_best = None
+
+            reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            index = 0
+
+            while index < len(reversed_gstates):
+                gstate = reversed_gstates[index]
+                tx, iid = self.fuzz_node(gstate, obs, svm)
+
+                if tx:
+                    # Update the best tx found so far (leftmost valid one in reverse traversal)
+                    print("indexxxxxxxxxxxxxxxx: ", index)
+                    tx_best = tx
+                    iid_best = iid
+
+                index += 1
+
+            if tx_best:
+                print("[Reverse-K] Leftmost valid transaction found:")
+                print(tx_best)
+                return tx_best, iid_best
+
+            print("[Reverse-K] No valid transaction found in top K")
+            return None, None
+
+
+
+        else:
+            p = 0
+            for gstate in sorted_gstates:
+                p= p + 1
+                tx, iid = self.fuzz_node(gstate, obs, svm)
+                if tx:
+                    print("index p is", p)
+                    print(gstate)
+                    return tx, iid
 
         return None, None
 
-    # def fuzz_node(self, gstate, obs, svm):
-    #     """
-    #     Generates and executes a transaction at a symbolic node, while updating coverage.
-    #     """
-    #     # Estimate potential coverage gain
-    #     pc_set = set(gstate.pc_trace)
-    #     gain = self.evaluate_pc_set_gain(obs.sym_stat, pc_set)
-    #     logging.debug(f'[PolicySymPlus] Node trace length={len(gstate.pc_trace)}, potential gain={gain}')
-    #     if len(self.last_picked_pc_traces) and self.last_picked_pc_traces[-1] == gstate.pc_trace:
-    #         return None, None
-    #     solver = self.get_state_solver(gstate)
-    #     if solver is None:
-    #         return None, None
-    #     model = solver.model()
-    #     sender_value = model.eval(gstate.environment.sender).as_long()
-    #     sender = svm.possible_caller_addresses.index(sender_value)
-    #     amount = model.eval(gstate.environment.callvalue).as_long()
-    #     method_name = gstate.wstate.trace.split('.')[1].split('(')[0]
-    #     address = hex(gstate.environment.active_address)
-    #     if address not in obs.contract_manager.address_to_contract:
-    #         raise Exception('unknown address')
-    #     contract = obs.contract_manager.address_to_contract[address]
-    #     timestamp = self._select_timestamp(obs)
-    #     if method_name == 'fallback':
-    #         if Method.FALLBACK not in contract.abi.methods_by_name:
-    #             return None, None
-    #         method_name = Method.FALLBACK
-    #         self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
-    #         logging.info(f'sending tx {method_name} {hex(sender_value)} {gain}')
-    #         return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True), gstate.wstate_idd
-    #     method = contract.abi.methods_by_name[method_name]
-    #     timestamp = model.eval(gstate.environment.timestamp).as_long()
-    #     inputs = method.inputs
-    #     arguments = []
-    #     random_args = self.policy_random._select_arguments(contract, method, sender, obs)
-    #     logging.info(f'sending tx {method.name} {hex(sender_value)} {gain}')
-    #     for i, arg in enumerate(inputs):
-    #         using_random = False
-    #         t = arg.evm_type.t
-    #         arg_eval = None
-    #         calldata = svm.sym_bv_generator.get_sym_bitvec(constraints.ConstraintType.CALLDATA,
-    #                                                     gstate.wstate.gen,
-    #                                                     index=4+i*32)
-    #         calldata_eval = model.eval(calldata)
-    #         if svm_utils.is_bv_concrete(calldata_eval):
-    #             arg_eval = calldata_eval.as_long()
-    #         else:
-    #             logging.debug(f'Using random variable for {method.name} {arg.name}')
-    #             using_random = True
-    #             arg_eval = random_args[i]
-    #         if not using_random:
-    #             if t == SolType.AddressTy:
-    #                 caller_constraint = z3.Or([calldata == p for p in svm.possible_caller_addresses if p != sender_value])
-    #                 solver.add(caller_constraint)
-    #                 if solver.check() == z3.sat:
-    #                     calldata_eval = solver.model().eval(calldata)
-    #                     arg_eval = calldata_eval.as_long()
-    #                 arg_eval = hex(arg_eval % (2**160))
-    #             elif t == SolType.FixedBytesTy:
-    #                 arg_eval = arg_eval % (8 * arg.evm_type.size)
-    #                 arg_bytes = arg_eval.to_bytes(arg.evm_type.size, 'big')
-    #                 arg_eval = [int(b) for b in arg_bytes]
-    #             elif t == SolType.ArrayTy:
-    #                 arg_eval = random_args[i]
-    #             elif t == SolType.BoolTy:
-    #                 arg_eval = False if arg_eval == 0 else True
-    #             elif t == SolType.StringTy:
-    #                 size = random.randint(int(math.log(arg_eval) / math.log(8)) + 1, 40)
-    #                 arg_eval = arg_eval.to_bytes(size, 'big')
-    #                 arg_eval = bytearray([c % 128 for c in arg_eval]).decode('ascii')
-    #         if not isinstance(arg_eval, type(random_args[i])):
-    #             arg_eval = random_args[i]
-    #         arguments.append(arg_eval)
-    #     self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
-    #     tx = Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True)
-    #     return tx, gstate.wstate_idd
-
+    #added---- VerifSmart---------------------------------------------------
     def fuzz_node(self, gstate, obs, svm):
         solver = self.get_state_solver(gstate)
         if solver is None:
@@ -224,6 +202,7 @@ class PolicySymPlus(PolicyBase):
         logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
         self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
         return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True), gstate.wstate_idd
+    #added---- VerifSmart---------------------------------------------------
 
     def get_best_tx(self, obs, svm, gstates):
         gain_to_gstates = defaultdict(list)

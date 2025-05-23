@@ -13,7 +13,7 @@ from .imitation import PolicyImitation
 
 
 LOG = logging.getLogger(__name__)
-
+global bugs
 
 class Environment:
 
@@ -54,12 +54,19 @@ class Environment:
             old_insn_coverage = obs.stat.get_insn_coverage(tx.contract)
             obs.update(logger, False)
             new_insn_coverage = obs.stat.get_insn_coverage(tx.contract)
+            bugs = obs.stat.get_new_bugs(tx.contract, bugs= {})
+            # final_cov = new_insn_coverage #---
+            print("LOSSY BUGGY", bugs)
+            print(type(bugs))
+
             print(new_insn_coverage)
             print(" ")
             if policy.__class__ in (PolicySymbolic, PolicySymPlus) and new_insn_coverage - old_insn_coverage < 1e-5:
                 break
 
             LOG.info(obs.stat)
+            print("Bugs ",type(obs.stat))
+            print(" ")
 
             if policy.__class__ not in (PolicySymbolic, PolicySymPlus) and i % 50 == 0:
                 policy.reset()
@@ -69,8 +76,8 @@ class Environment:
                     policy.policy_fuzz.clear_history()
                 if obs.__class__ == ObsMix:
                     obs.reset()
-            final_cov = new_insn_coverage #---
-        return final_cov#----
+            
+        return new_insn_coverage, bugs#----
 
 
     def init_txs(self, policy, obs):

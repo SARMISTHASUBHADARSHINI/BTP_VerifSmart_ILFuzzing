@@ -40,3 +40,6 @@ contract Crowdsale { function echidna_alwaystrue() public returns (bool) { retur
     deposits[msg.sender] = 0;
   }
 }
+
+
+
