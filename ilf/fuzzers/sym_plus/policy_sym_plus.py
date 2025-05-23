@@ -1,3 +1,4 @@
+
 import abc
 import math
 import json
@@ -121,7 +122,9 @@ class PolicySymPlus(PolicyBase):
             tx_best = None
             iid_best = None
 
-            reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            # reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            reversed_gstates = sorted_gstates[:k]  # Take the last K elements
+
             index = 0
 
             while index < len(reversed_gstates):

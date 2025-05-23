@@ -76,16 +76,16 @@ class PolicySymPlus(PolicyBase):
         self.idd_to_gstates[obs.active_idd] = unique_gstates
 
         # Sort by estimated gain and depth to prioritize deeper unexplored paths
-        sorted_gstates = sorted(
-            unique_gstates,
-            key=lambda g: (-self.evaluate_pc_set_gain(obs.sym_stat, set(g.pc_trace)), -len(g.pc_trace))
-        )
-
-        # Sort only by depth to prioritize deeper unexplored paths
         # sorted_gstates = sorted(
         #     unique_gstates,
-        #     key=lambda g: -len(g.pc_trace)
+        #     key=lambda g: (-self.evaluate_pc_set_gain(obs.sym_stat, set(g.pc_trace)), -len(g.pc_trace))
         # )
+
+        # Sort only by depth to prioritize deeper unexplored paths
+        sorted_gstates = sorted(
+            unique_gstates,
+            key=lambda g: -len(g.pc_trace)
+        )
 
         # if self.K != -1:
         #     k = self.K  #bounded
@@ -122,7 +122,13 @@ class PolicySymPlus(PolicyBase):
             iid_best = None
 
             reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            reversed_gstates = sorted_gstates[:k]  # Take the last K elements in reverse (right to left)
+
             index = 0
+            print("-------------------------------------------------------------------------------")
+            print(len(reversed_gstates))
+            print(len(gstates))
+            print(" ")
 
             while index < len(reversed_gstates):
                 gstate = reversed_gstates[index]
@@ -133,15 +139,16 @@ class PolicySymPlus(PolicyBase):
                     print("indexxxxxxxxxxxxxxxx: ", index)
                     tx_best = tx
                     iid_best = iid
+                    return tx, iid
 
                 index += 1
 
-            if tx_best:
-                print("[Reverse-K] Leftmost valid transaction found:")
-                print(tx_best)
-                return tx_best, iid_best
+            # if tx_best:
+            #     print("[Reverse-K] Leftmost valid transaction found:")
+            #     print(tx_best)
+            #     return tx_best, iid_best
 
-            print("[Reverse-K] No valid transaction found in top K")
+            # print("[Reverse-K] No valid transaction found in top K")
             return None, None
 
 
@@ -183,23 +190,51 @@ class PolicySymPlus(PolicyBase):
             method_name = Method.FALLBACK
             logging.info(f'Fuzzing node - executing fallback at {hex(sender_value)}')
             self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
-            return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True)
+            return Tx(self, contract.name, address, method_name, bytes(), [], amount, sender, timestamp, True), gstate.wstate_idd
 
         method = contract.abi.methods_by_name[method_name]
         inputs = method.inputs
         arguments = []
         random_args = self.policy_random._select_arguments(contract, method, sender, obs)
-
+        logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
         for i, arg in enumerate(inputs):
+            using_random = False
+            t = arg.evm_type.t
+            arg_eval = None
             calldata = svm.sym_bv_generator.get_sym_bitvec(constraints.ConstraintType.CALLDATA, gstate.wstate.gen, index=4 + i * 32)
             calldata_eval = model.eval(calldata)
             if svm_utils.is_bv_concrete(calldata_eval):
                 arg_eval = calldata_eval.as_long()
             else:
+                # arg_eval = random_args[i]
+                logging.debug(f'Using random variable for {method.name} {arg.name}')
+                using_random = True
+                arg_eval = random_args[i]
+            if not using_random:
+                if t == SolType.AddressTy:
+                    caller_constraint = z3.Or([calldata == p for p in svm.possible_caller_addresses if p != sender_value])
+                    solver.add(caller_constraint)
+                    if solver.check() == z3.sat:
+                        calldata_eval = solver.model().eval(calldata)
+                        arg_eval = calldata_eval.as_long()
+                    arg_eval = hex(arg_eval % (2**160))
+                elif t == SolType.FixedBytesTy:
+                    arg_eval = arg_eval % (8 * arg.evm_type.size)
+                    arg_bytes = arg_eval.to_bytes(arg.evm_type.size, 'big')
+                    arg_eval = [int(b) for b in arg_bytes]
+                elif t == SolType.ArrayTy:
+                    arg_eval = random_args[i]
+                elif t == SolType.BoolTy:
+                    arg_eval = False if arg_eval == 0 else True
+                elif t == SolType.StringTy:
+                    size = random.randint(int(math.log(arg_eval) / math.log(8)) + 1, 40)
+                    arg_eval = arg_eval.to_bytes(size, 'big')
+                    arg_eval = bytearray([c % 128 for c in arg_eval]).decode('ascii')
+            if not isinstance(arg_eval, type(random_args[i])):
                 arg_eval = random_args[i]
             arguments.append(arg_eval)
 
-        logging.info(f'Fuzzing node - executing {method.name} at {hex(sender_value)}')
+        
         self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
         return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True), gstate.wstate_idd
     #added---- VerifSmart---------------------------------------------------

@@ -147,7 +147,11 @@ if __name__ == '__main__':
     print(" ")
     print("FINAL Bugs Found after {} runs: {}".format(runs, FINALbugs))
     print("FINAL INST cov after {} runs: {}".format(runs, cov))
-    print("11: ",c1)
-    print(c2)    
+    with open("/go/src/ilf/result.txt", "a") as f:
+        f.write(f"Depth {K} Results:\n")
+        f.write(f"Final Instruction Coverage after {runs} runs: {cov}\n")
+        f.write(f"Final Bugs Found after {runs} runs: {FINALbugs}\n")
+    # print("11: ",c1)
+    # print(c2)    
     # ---------------- VerifSmart ----------------
 

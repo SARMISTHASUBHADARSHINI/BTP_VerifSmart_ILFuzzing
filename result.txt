@@ -1,0 +1,60 @@
+Depth 1 Results:
+Final Instruction Coverage after 5 runs: 0.8723809523809524
+Final Bugs Found after 5 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 5 runs: 0.8
+Final Bugs Found after 5 runs: {}
+Depth 3 Results:
+Final Instruction Coverage after 5 runs: 0.5714285714285714
+Final Bugs Found after 5 runs: {}
+Depth 4 Results:
+Final Instruction Coverage after 5 runs: 0.6
+Final Bugs Found after 5 runs: {}
+Depth 5 Results:
+Final Instruction Coverage after 5 runs: 0.699047619047619
+Final Bugs Found after 5 runs: {}
+Depth 6 Results:
+Final Instruction Coverage after 5 runs: 0.5657142857142857
+Final Bugs Found after 5 runs: {}
+Depth 7 Results:
+Final Instruction Coverage after 5 runs: 0.5314285714285715
+Final Bugs Found after 5 runs: {}
+Depth 8 Results:
+Final Instruction Coverage after 5 runs: 0.4990476190476191
+Final Bugs Found after 5 runs: {}
+Depth 9 Results:
+Final Instruction Coverage after 5 runs: 0.33714285714285713
+Final Bugs Found after 5 runs: {}
+Depth 10 Results:
+Final Instruction Coverage after 5 runs: 0.3180952380952381
+Final Bugs Found after 5 runs: {}
+Depth 11 Results:
+Final Instruction Coverage after 5 runs: 0.3180952380952381
+Final Bugs Found after 5 runs: {}
+Depth 12 Results:
+Final Instruction Coverage after 5 runs: 0.3180952380952381
+Final Bugs Found after 5 runs: {}
+Depth 13 Results:
+Final Instruction Coverage after 5 runs: 0.3047619047619048
+Final Bugs Found after 5 runs: {}
+Depth 14 Results:
+Final Instruction Coverage after 5 runs: 0.3047619047619048
+Final Bugs Found after 5 runs: {}
+Depth 15 Results:
+Final Instruction Coverage after 5 runs: 0.46285714285714286
+Final Bugs Found after 5 runs: {}
+Depth 16 Results:
+Final Instruction Coverage after 5 runs: 0.38285714285714284
+Final Bugs Found after 5 runs: {}
+Depth 17 Results:
+Final Instruction Coverage after 5 runs: 0.2361904761904762
+Final Bugs Found after 5 runs: {}
+Depth 18 Results:
+Final Instruction Coverage after 5 runs: 0.3028571428571429
+Final Bugs Found after 5 runs: {}
+Depth 19 Results:
+Final Instruction Coverage after 5 runs: 0.2019047619047619
+Final Bugs Found after 5 runs: {}
+Depth 20 Results:
+Final Instruction Coverage after 5 runs: 0.2019047619047619
+Final Bugs Found after 5 runs: {}
