@@ -1,0 +1,3 @@
+cd truffle_project && rm -f transactions.json && cd .. && python3 script/extract.py --proj truffle_project/ --port 8545
+
+python3 -m ilf --proj truffle_project --contract HotDollarsToken --fuzzer sym_plus --model ./model/ --limit 2000 --depth -1 --runs 5
