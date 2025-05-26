@@ -1,3 +1,19 @@
 cd truffle_project && rm -f transactions.json && cd .. && python3 script/extract.py --proj truffle_project/ --port 8545
 
 python3 -m ilf --proj truffle_project --contract HotDollarsToken --fuzzer sym_plus --model ./model/ --limit 2000 --depth -1 --runs 5
+
+steps- 
+1. cd example && mkdir -p contract2 && cd contract2 && truffle init
+
+2. deploycontract - 
+const Crowdsale = artifacts.require("Crowdsale");
+
+module.exports = function(deployer) {
+  deployer.deploy(Crowdsale);
+}; 
+
+3. create truffle config
+
+4. cd /go/src/ilf && python3 script/extract.py --proj example/contract2/ --port 8545
+
+5. python3 -m ilf --proj example/contract2 --contract Crowdsale --fuzzer sym_plus --model ./model/ --limit 2000 --depth -1 --runs 1
