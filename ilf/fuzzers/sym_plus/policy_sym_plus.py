@@ -1,4 +1,5 @@
 
+
 import abc
 import math
 import json
@@ -82,52 +83,17 @@ class PolicySymPlus(PolicyBase):
             key=lambda g: (-self.evaluate_pc_set_gain(obs.sym_stat, set(g.pc_trace)), -len(g.pc_trace))
         )
 
-        # Sort only by depth to prioritize deeper unexplored paths
-        # sorted_gstates = sorted(
-        #     unique_gstates,
-        #     key=lambda g: -len(g.pc_trace)
-        # )
-
-        # if self.K != -1:
-        #     k = self.K  #bounded
-        #     tx_old = None
-        #     iid_old = None
-        #     for gstate in sorted_gstates:
-        #         k= k-1
-        #         tx, iid = self.fuzz_node(gstate, obs, svm)
-        #         if k >=0:
-        #             if tx:
-        #                 print("K IS THIS", k)
-        #                 print(gstate)
-        #                 print(" ")
-        #                 return tx, iid
-        #             else:
-        #                 print(k)
-        #                 print("CALLLLLLLLLLLLLLLLL OLD")
-        #                 print(tx_old == None)
-        #                 return tx_old, iid_old
-        #         if tx:
-        #             tx_old = tx 
-        #             iid_old = iid
-        #     return tx_old, iid_old
-        # else:
-        #     for gstate in sorted_gstates:
-        #         tx, iid = self.fuzz_node(gstate, obs, svm)
-        #         if tx:
-        #             print(gstate)
-        #             return tx, iid
-
         if self.K != -1:
             k = self.K  # bounded
             tx_best = None
             iid_best = None
 
-            # reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
-            updated_gstates = sorted_gstates[:k]  # Take the last K elements
+            reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            reversed_gstates = sorted_gstates[:k]  # Take the last K elements
 
             index = 0
 
-            while index < len(updated_gstates):
+            while index < len(reversed_gstates):
                 gstate = reversed_gstates[index]
                 tx, iid = self.fuzz_node(gstate, obs, svm)
 
@@ -283,26 +249,5 @@ class PolicySymPlus(PolicyBase):
         res = solver.check()
         if res == z3.unknown:
             logging.info(f'{gstate.wstate.trace} gstate check timeout')
-        gstate.wstate.status = WorldStateStatus.FEASIBLE if res == z3.sat else WorldStateStatus.INFEASIBLE
-        return solver if res == z3.sat else None
-
-    @staticmethod
-    def get_state_solver(gstate):
-        if not hasattr(gstate, 'wstate') or not hasattr(gstate.wstate, 'constraints'):
-            logging.warning(f'[get_state_solver] Invalid GlobalState without constraints: {gstate}')
-            return None
-
-        status = getattr(gstate.wstate, 'status', None)
-        if status == WorldStateStatus.INFEASIBLE:
-            return None
-
-        solver = z3.Solver()
-        solver.set('timeout', 3 * 60 * 1000)
-        solver.add(gstate.wstate.constraints)
-        res = solver.check()
-
-        if res == z3.unknown:
-            logging.info(f'{getattr(gstate.wstate, "trace", "unknown_trace")} gstate check timeout')
-
         gstate.wstate.status = WorldStateStatus.FEASIBLE if res == z3.sat else WorldStateStatus.INFEASIBLE
         return solver if res == z3.sat else None
