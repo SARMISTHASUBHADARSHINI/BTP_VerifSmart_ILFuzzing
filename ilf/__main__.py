@@ -130,11 +130,6 @@ if __name__ == '__main__':
     
     for i in range(runs):
         cur_cov, bugs = main(args)
-        if cur_cov == 0.8342857142857143:
-            c1 = c1 + 1
-        else:
-            c2 = c2 +1
-
         print("Completed run:", i + 1)
         print("Bugs found", bugs)
         for bug_type, methods in bugs.items():
@@ -150,8 +145,6 @@ if __name__ == '__main__':
     with open("/go/src/ilf/result.txt", "a") as f:
         f.write(f"Depth {K} Results:\n")
         f.write(f"Final Instruction Coverage after {runs} runs: {cov}\n")
-        f.write(f"Final Bugs Found after {runs} runs: {FINALbugs}\n")
-    # print("11: ",c1)
-    # print(c2)    
+        f.write(f"Final Bugs Found after {runs} runs: {FINALbugs}\n")   
     # ---------------- VerifSmart ----------------
 

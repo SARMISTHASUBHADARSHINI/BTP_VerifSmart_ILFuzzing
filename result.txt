@@ -187,3 +187,123 @@ Final Bugs Found after 1 runs: {}
 Depth -1 Results:
 Final Instruction Coverage after 1 runs: 0.7684563758389261
 Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7684563758389261
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7634228187919463
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.9662077596996246
+Final Bugs Found after 1 runs: {'BlockStateDep': {'bug_tmstmp40'}}
+Depth 2 Results:
+Final Instruction Coverage after 1 runs: 0.8
+Final Bugs Found after 1 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 5 runs: 0.8
+Final Bugs Found after 5 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 10 runs: 0.8
+Final Bugs Found after 10 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 10 runs: 0.8
+Final Bugs Found after 10 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 10 runs: 0.7676190476190476
+Final Bugs Found after 10 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 1 runs: 0.8
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.9861932938856016
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.8642052565707133
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.9861932938856016
+Final Bugs Found after 1 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 1 runs: 0.8
+Final Bugs Found after 1 runs: {}
+Depth 2 Results:
+Final Instruction Coverage after 1 runs: 0.8
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.9861932938856016
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8642052565707133
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.7257142857142858
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.8342857142857143
+Final Bugs Found after 1 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.16952380952380952
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.16952380952380952
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.9861932938856016
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.35700197238658776
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.35700197238658776
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.9861932938856016
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 1 runs: 0.9861932938856016
+Final Bugs Found after 1 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.9861932938856016
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.7684563758389261
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.7676190476190476
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.9861932938856016
+Final Bugs Found after 5 runs: {}
+Depth -1 Results:
+Final Instruction Coverage after 5 runs: 0.8342857142857143
+Final Bugs Found after 5 runs: {'Leaking': {'withdraw'}}

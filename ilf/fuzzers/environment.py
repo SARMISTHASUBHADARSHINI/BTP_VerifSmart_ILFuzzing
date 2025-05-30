@@ -56,7 +56,7 @@ class Environment:
             new_insn_coverage = obs.stat.get_insn_coverage(tx.contract)
             bugs = obs.stat.get_new_bugs(tx.contract, bugs= {})
             # final_cov = new_insn_coverage #---
-            print("LOSSY BUGGY", bugs)
+            print("BUGS", bugs)
             print(type(bugs))
 
             print(new_insn_coverage)
@@ -65,7 +65,7 @@ class Environment:
                 break
 
             LOG.info(obs.stat)
-            print("Bugs ",type(obs.stat))
+            # print("Bugs ",type(obs.stat))
             print(" ")
 
             if policy.__class__ not in (PolicySymbolic, PolicySymPlus) and i % 50 == 0:

@@ -1,5 +1,3 @@
-
-
 import abc
 import math
 import json
@@ -48,6 +46,7 @@ class PolicySymPlus(PolicyBase):
         logging.info(f'no gain found globally')
         return None
 
+    #modified and updated---- VerifSmart---------------------------------------------------
     def select_new_tx(self, obs):
         self.tx_count += 1
         svm = obs.svm
@@ -83,34 +82,36 @@ class PolicySymPlus(PolicyBase):
             key=lambda g: (-self.evaluate_pc_set_gain(obs.sym_stat, set(g.pc_trace)), -len(g.pc_trace))
         )
 
+
+
         if self.K != -1:
             k = self.K  # bounded
             tx_best = None
             iid_best = None
 
-            reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
-            reversed_gstates = sorted_gstates[:k]  # Take the last K elements
+            # reversed_gstates = sorted_gstates[::-1][:k]  # Take the last K elements in reverse (right to left)
+            bounded_gstates = sorted_gstates[:k]  # Take the first K elements
 
             index = 0
 
-            while index < len(reversed_gstates):
-                gstate = reversed_gstates[index]
+            while index < len(bounded_gstates):
+                gstate = bounded_gstates[index]
                 tx, iid = self.fuzz_node(gstate, obs, svm)
 
                 if tx:
                     # Update the best tx found so far (leftmost valid one in reverse traversal)
-                    print("indexxxxxxxxxxxxxxxx: ", index)
+                    print("index: ", index)
                     tx_best = tx
                     iid_best = iid
 
                 index += 1
 
             if tx_best:
-                print("[Reverse-K] Leftmost valid transaction found:")
+                print("Most valid transaction found:")
                 print(tx_best)
                 return tx_best, iid_best
 
-            print("[Reverse-K] No valid transaction found in top K")
+            print("No valid transaction found in top K")
             return None, None
 
 
@@ -121,11 +122,12 @@ class PolicySymPlus(PolicyBase):
                 p= p + 1
                 tx, iid = self.fuzz_node(gstate, obs, svm)
                 if tx:
-                    print("index p is", p)
+                    print("index is ", p)
                     print(gstate)
                     return tx, iid
 
         return None, None
+    #modified and updated---- VerifSmart---------------------------------------------------
 
     #added---- VerifSmart---------------------------------------------------
     def fuzz_node(self, gstate, obs, svm):
@@ -215,10 +217,13 @@ class PolicySymPlus(PolicyBase):
                 random_args = self.policy_random._select_arguments(contract, method, sender, obs)
 
                 for i, arg in enumerate(method.inputs):
+                     #modified--- VerifSmart---------------------------------------------------
                     calldata = svm.sym_bv_generator.get_sym_bitvec(constraints.ConstraintType.CALLDATA, gstate.wstate.gen, index=4+i*32)
                     calldata_eval = model.eval(calldata)
                     arg_eval = calldata_eval.as_long() if svm_utils.is_bv_concrete(calldata_eval) else random_args[i]
                     arguments.append(arg_eval)
+                     #modified--- VerifSmart---------------------------------------------------
+
 
                 self.add_pc_set_to_stat(obs.sym_stat, set(gstate.pc_trace))
                 return Tx(self, contract.name, address, method.name, bytes(), arguments, amount, sender, timestamp, True), gstate.wstate_idd
